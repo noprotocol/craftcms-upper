@@ -1,7 +1,13 @@
-<?php namespace ostark\upper;
+<?php
 
+namespace OneTribe\Upper;
+
+use Craft;
 use craft\base\Element;
+use craft\console\Application;
+use craft\elements\Asset;
 use craft\elements\db\ElementQuery;
+use craft\elements\GlobalSet;
 use craft\events\ElementEvent;
 use craft\events\ElementStructureEvent;
 use craft\events\MoveElementEvent;
@@ -14,22 +20,17 @@ use craft\services\Elements;
 use craft\services\Sections;
 use craft\services\Structures;
 use craft\utilities\ClearCaches;
-use craft\web\Response;
 use craft\web\View;
-use ostark\upper\events\CacheResponseEvent;
-use ostark\upper\events\PurgeEvent;
-use ostark\upper\jobs\PurgeCacheJob;
+use DateTimeInterface;
+use Exception;
+use OneTribe\Upper\Events\CacheResponseEvent;
+use OneTribe\Upper\Events\PurgeEvent;
+use OneTribe\Upper\Jobs\PurgeCacheJob;
 use yii\base\Event;
 
-/**
- * Class EventRegistrar
- *
- * @package ostark\upper
- */
 class EventRegistrar
 {
-
-    public static function registerUpdateEvents()
+    public static function registerUpdateEvents(): void
     {
         Event::on(Elements::class, Elements::EVENT_AFTER_SAVE_ELEMENT, function ($event) {
             static::handleUpdateEvent($event);
@@ -52,12 +53,12 @@ class EventRegistrar
     public static function registerFrontendEvents()
     {
         // No need to continue when in cli mode
-        if (\Craft::$app instanceof \craft\console\Application) {
+        if (Craft::$app instanceof Application) {
             return false;
         }
 
         // HTTP request object
-        $request = \Craft::$app->getRequest();
+        $request = Craft::$app->getRequest();
 
         // Don't cache CP, LivePreview, Action, Non-GET requests
         if ($request->getIsCpRequest() ||
@@ -65,7 +66,8 @@ class EventRegistrar
             $request->getIsActionRequest() ||
             !$request->getIsGet()
         ) {
-            $response = \Craft::$app->getResponse();
+            /** @var \OneTribe\Upper\Behaviors\CacheControlBehavior|\OneTribe\Upper\Behaviors\TagHeaderBehavior|\yii\web\Response $response */
+            $response = Craft::$app->getResponse();
             $response->addCacheControlDirective('private');
             $response->addCacheControlDirective('no-cache');
 
@@ -81,7 +83,7 @@ class EventRegistrar
             }
 
             // Tag with GlobalSet handle
-            if ($event->element instanceof \craft\elements\GlobalSet) {
+            if ($event->element instanceof GlobalSet) {
                 Plugin::getInstance()->getTagCollection()->add($event->element->handle);
             }
 
@@ -93,13 +95,13 @@ class EventRegistrar
         // Add the tags to the response header
         Event::on(View::class, View::EVENT_AFTER_RENDER_PAGE_TEMPLATE, function (TemplateEvent $event) {
 
-            /** @var \yii\web\Response $response */
-            $response      = \Craft::$app->getResponse();
-            $plugin        = Plugin::getInstance();
+            /** @var \OneTribe\Upper\Behaviors\CacheControlBehavior|\OneTribe\Upper\Behaviors\TagHeaderBehavior|\yii\web\Response $response */
+            $response = Craft::$app->getResponse();
+            $plugin = Plugin::getInstance();
             $tagCollection = $plugin->getTagCollection();
-            $tags          = $plugin->getTagCollection()->getAll();
-            $settings      = $plugin->getSettings();
-            $headers       = $response->getHeaders();
+            $tags = $plugin->getTagCollection()->getAll();
+            $settings = $plugin->getSettings();
+            $headers = $response->getHeaders();
 
             // Make existing cache-control headers accessible
             $response->setCacheControlDirectiveFromString($headers->get('cache-control'));
@@ -125,31 +127,30 @@ class EventRegistrar
             }
 
             $response->setSharedMaxAge($maxAge);
-            $headers->set(Plugin::INFO_HEADER_NAME, "CACHED: " . date(\DateTime::ISO8601));
+            $headers->set(Plugin::INFO_HEADER_NAME, "CACHED: " . date(DateTimeInterface::ATOM));
 
             $plugin->trigger($plugin::EVENT_AFTER_SET_TAG_HEADER, new CacheResponseEvent([
-                    'tags'       => $tags,
-                    'maxAge'     => $maxAge,
-                    'requestUrl' => \Craft::$app->getRequest()->getUrl(),
-                    'headers'    => $response->getHeaders()->toArray()
+                    'tags' => $tags,
+                    'maxAge' => $maxAge,
+                    'requestUrl' => Craft::$app->getRequest()->getUrl(),
+                    'headers' => $response->getHeaders()->toArray()
                 ]
             ));
         });
-
     }
 
 
-    public static function registerCpEvents()
+    public static function registerCpEvents(): void
     {
         // Register cache purge checkbox
         Event::on(
             ClearCaches::class,
             ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
             function (RegisterCacheOptionsEvent $event) {
-                $driver           = ucfirst(Plugin::getInstance()->getSettings()->driver);
+                $driver = ucfirst(Plugin::getInstance()->getSettings()->driver);
                 $event->options[] = [
-                    'key'    => 'upper-purge-all',
-                    'label'  => \Craft::t('upper', 'Upper ({driver})', ['driver' => $driver]),
+                    'key' => 'upper-purge-all',
+                    'label' => Craft::t('upper', 'Upper ({driver})', ['driver' => $driver]),
                     'action' => function () {
                         Plugin::getInstance()->getPurger()->purgeAll();
                     },
@@ -158,10 +159,8 @@ class EventRegistrar
         );
     }
 
-
-    public static function registerFallback()
+    public static function registerFallback(): void
     {
-
         Event::on(Plugin::class, Plugin::EVENT_AFTER_SET_TAG_HEADER, function (CacheResponseEvent $event) {
 
             // not tagged?
@@ -170,7 +169,7 @@ class EventRegistrar
             }
 
             // fulltext or array
-            $tags = \Craft::$app->getDb()->getIsMysql()
+            $tags = Craft::$app->getDb()->getIsMysql()
                 ? implode(" ", $event->tags)
                 : str_replace(['[', ']'], ['{', '}'], json_encode($event->tags) ?: '[]');
 
@@ -179,7 +178,7 @@ class EventRegistrar
 
             try {
                 // Insert item
-                \Craft::$app->getDb()->createCommand()
+                Craft::$app->getDb()->createCommand()
                     ->upsert(
                     // Table
                         Plugin::CACHE_TABLE,
@@ -190,29 +189,25 @@ class EventRegistrar
                         // Data
                         [
                             'urlHash' => $urlHash,
-                            'url'     => $event->requestUrl,
-                            'tags'    => $tags,
+                            'url' => $event->requestUrl,
+                            'tags' => $tags,
                             'headers' => json_encode($event->headers),
-                            'siteId'  => \Craft::$app->getSites()->currentSite->id
+                            'siteId' => Craft::$app->getSites()->currentSite->id
                         ]
                     )
                     ->execute();
-            } catch (\Exception $e) {
-                \Craft::warning("Failed to register fallback.", "upper");
+            } catch (Exception $e) {
+                Craft::warning("Failed to register fallback.", "upper");
             }
-
         });
-
     }
 
-
     /**
-     * @param \yii\base\Event $event
+     * @throws \yii\base\InvalidConfigException
      */
-    protected static function handleUpdateEvent(Event $event)
+    protected static function handleUpdateEvent(Event $event): void
     {
         $tags = [];
-
 
         if ($event instanceof ElementEvent) {
 
@@ -230,9 +225,9 @@ class EventRegistrar
                 return;
             }
 
-            if ($event->element instanceof \craft\elements\GlobalSet && is_string($event->element->handle)) {
+            if ($event->element instanceof GlobalSet && is_string($event->element->handle)) {
                 $tags[] = $event->element->handle;
-            } elseif ($event->element instanceof \craft\elements\Asset && $event->isNew) {
+            } elseif ($event->element instanceof Asset && $event->isNew) {
                 $tags[] = (string)$event->element->volumeId;
             } else {
                 if (isset($event->element->sectionId)) {
@@ -266,14 +261,18 @@ class EventRegistrar
             Plugin::getInstance()->trigger(Plugin::EVENT_BEFORE_PURGE, $purgeEvent);
 
             // Push to queue
-            \Craft::$app->getQueue()->push(new PurgeCacheJob([
+            $queue = Craft::$app->getQueue();
+
+            if (Plugin::getInstance()->getSettings()->jobTtr !== null) {
+                $queue = $queue->ttr(Plugin::getInstance()->getSettings()->jobTtr);
+            }
+
+            $queue
+                ->push(new PurgeCacheJob([
                     'tag' => $purgeEvent->tag
-                ]
-            ));
+                ]));
 
             Plugin::getInstance()->trigger(Plugin::EVENT_AFTER_PURGE, $purgeEvent);
         }
-
     }
-
 }

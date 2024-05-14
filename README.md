@@ -28,7 +28,7 @@ If you are looking additional integrations (Cache Drivers), feel free to contrib
 * [KeyCDN](https://www.keycdn.com) (CDN/SaaS)
 * [Fastly](https://www.fastly.com) (CDN/SaaS)
 * [Cloudflare](https://www.cloudflare.com) (CDN/SaaS)
-* Varnish with XKEY support (your own proxy)
+* [Akamai](https://www.akamai.com) (CDN/SaaS)
 * Dummy (does nothing)
 
 ## Installation
@@ -72,12 +72,16 @@ If you don't use Cloudflare Enterprise with native `Cache-Tag` support, make sur
 
 You can generate a token in the Cloudflare dashboard. You want to create a custom token with the "Zone.Cache Purge" permission that is restricted to the DNS zone(s) you wish to clear Cloudflare's cache for.
 
- 
-### Varnish Setup
-Varnish URL supports multiple servers, separate with comma. E.g `http://1.1.1.1,http://2.2.2.2`
+
+### Akamai Setup
+
 ```
-UPPER_DRIVER=varnish
-VARNISH_URL=<REPLACE-ME>
+UPPER_DRIVER=akamai
+AKAMAI_HOST=<REPLACE-ME>
+AKAMAI_CLIENT_TOKEN=<REPLACE-ME>
+AKAMAI_CLIENT_SECRET=<REPLACE-ME>
+AKAMAI_ACCESS_TOKEN=<REPLACE-ME>
+AKAMAI_MAX_SIZE=2048
 ```
 
 ### Tuning

@@ -1,20 +1,10 @@
-<?php namespace ostark\upper\events;
+<?php
+
+namespace OneTribe\Upper\Events;
 
 use yii\base\Event;
 
-/**
- * Class PurgeEvent
- *
- * @package ostark\upper\events
- */
 class PurgeEvent extends Event
 {
-    // Properties
-    // =========================================================================
-
-    /**
-    * @var string tag
-    */
-    public $tag;
-
+    public string $tag;
 }

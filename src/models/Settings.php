@@ -1,6 +1,7 @@
-<?php namespace ostark\upper\models;
+<?php
 
-use Craft;
+namespace OneTribe\Upper\Models;
+
 use craft\base\Model;
 use yii\helpers\Inflector;
 
@@ -20,52 +21,19 @@ use yii\helpers\Inflector;
  */
 class Settings extends Model
 {
-    // Public Properties
-    // =========================================================================
+    public string $driver;
 
-    /**
-     * Some field model attribute
-     *
-     * @var string
-     */
-    public $driver;
+    public array $drivers;
 
+    public ?int $defaultMaxAge = null;
 
-    /**
-     * Some field model attribute
-     *
-     * @var array
-     */
-    public $drivers;
+    public bool $useLocalTags = true;
 
-    /**
-     * Some field model attribute
-     *
-     * @var int
-     */
-    public $defaultMaxAge = null;
+    public string $keyPrefix = '';
 
-    /**
-     * @var bool
-     */
-    public $useLocalTags = true;
+    public ?int $maxBytesForCacheTagHeader = null;
 
-    /**
-     * Key prefix
-     *
-     * @var string
-     */
-    public $keyPrefix = '';
-
-    /**
-     * Max kilobytes of the X-Cachetag header
-     *
-     * @var int
-     */
-    public $maxBytesForCacheTagHeader = null;
-
-    // Public Methods
-    // =========================================================================
+    public ?int $jobTtr = null;
 
     /**
      * Returns the validation rules for attributes.
@@ -74,28 +42,27 @@ class Settings extends Model
      * Child classes may override this method to declare different validation rules.
      *
      * More info: http://www.yiiframework.com/doc-2.0/guide-input-validation.html
-     *
-     * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
-            [['driver', 'drivers','keyPrefix'], 'required'],
+            [
+                [
+                    'driver',
+                    'drivers',
+                    'keyPrefix',
+                ],
+                'required'
+            ],
         ];
     }
 
-    /**
-     * @return string
-     */
-    public function getTagHeaderName()
+    public function getTagHeaderName(): string
     {
         return $this->drivers[$this->driver]['tagHeaderName'];
     }
 
-    /**
-     * @return string
-     */
-    public function getHeaderTagDelimiter()
+    public function getHeaderTagDelimiter(): string
     {
         return $this->drivers[$this->driver]['tagHeaderDelimiter'] ?? ' ';
     }
@@ -104,35 +71,26 @@ class Settings extends Model
      * Get key prefix.
      * To prevent key collision if you use the same
      * cache server for several Craft installations.
-     *
-     * @return string
      */
-    public function getKeyPrefix()
+    public function getKeyPrefix(): string
     {
         if (!$this->keyPrefix) {
             return '';
         }
 
         $clean = Inflector::slug($this->keyPrefix);
+
         return substr($clean, 0, 8);
     }
 
-    /**
-     * @return array
-     */
-    public function getNoCacheElements()
+    public function getNoCacheElements(): array
     {
         return ['craft\elements\User', 'craft\elements\MatrixBlock', 'verbb\supertable\elements\SuperTableBlockElement'];
     }
 
-    /**
-     * @param string $class
-     *
-     * @return bool
-     */
-    public function isCachableElement(string $class)
+    public function isCachableElement(string $class): bool
     {
-        return in_array($class, $this->getNoCacheElements()) ? false : true;
+        return in_array($class, $this->getNoCacheElements(), true) ? false : true;
     }
 
 }

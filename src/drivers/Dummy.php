@@ -1,24 +1,14 @@
-<?php namespace ostark\upper\drivers;
+<?php
 
-/**
- * Class Dummy Driver
- *
- * @package ostark\upper\drivers
- */
+namespace OneTribe\Upper\Drivers;
+
+use Craft;
+
 class Dummy extends AbstractPurger implements CachePurgeInterface
 {
+    public bool $logPurgeActions = true;
 
-    /**
-     * @var bool
-     */
-    public $logPurgeActions = true;
-
-    /**
-     * @param string $tag
-     *
-     * @return bool
-     */
-    public function purgeTag(string $tag)
+    public function purgeTag(string $tag): bool
     {
         $this->log("Dummy::purgeTag($tag) was called.");
 
@@ -29,13 +19,7 @@ class Dummy extends AbstractPurger implements CachePurgeInterface
         return true;
     }
 
-
-    /**
-     * @param array $urls
-     *
-     * @return bool
-     */
-    public function purgeUrls(array $urls)
+    public function purgeUrls(array $urls): bool
     {
         $joinedUrls = implode(',', $urls);
         $this->log("Dummy::purgeUrls([$joinedUrls]') was called.");
@@ -43,11 +27,10 @@ class Dummy extends AbstractPurger implements CachePurgeInterface
         return true;
     }
 
-
     /**
-     * @return bool
+     * @throws \yii\db\Exception
      */
-    public function purgeAll()
+    public function purgeAll(): bool
     {
         if ($this->useLocalTags) {
             $this->clearLocalCache();
@@ -58,17 +41,12 @@ class Dummy extends AbstractPurger implements CachePurgeInterface
         return true;
     }
 
-
-    /**
-     * @param string|null $message
-     */
-    protected function log(string $message = null)
+    protected function log(?string $message = null): void
     {
         if (!$this->logPurgeActions) {
             return;
         }
 
-        \Craft::warning($message, "upper");
+        Craft::warning($message, "upper");
     }
-
 }

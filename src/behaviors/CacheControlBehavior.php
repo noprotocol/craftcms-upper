@@ -1,29 +1,20 @@
-<?php namespace ostark\upper\behaviors;
+<?php
+
+namespace OneTribe\Upper\Behaviors;
 
 use yii\base\Behavior;
-use yii\web\Response;
 
 /**
- * Class CacheControlBehavior
- *
- * @package ostark\upper\behaviors
  * @property \yii\web\Response $owner
  */
 class CacheControlBehavior extends Behavior
 {
-    /**
-     * @var array
-     */
-    protected $cacheControl = [];
-
+    protected array $cacheControl = [];
 
     /**
      * Adds a custom Cache-Control directive.
-     *
-     * @param string $key   The Cache-Control directive name
-     * @param mixed  $value The Cache-Control directive value
      */
-    public function addCacheControlDirective(string $key, $value = true)
+    public function addCacheControlDirective(string $key, mixed $value = true): void
     {
         $this->cacheControl[$key] = $value;
         $this->owner->getHeaders()->set('Cache-Control', $this->getCacheControlHeader());
@@ -31,40 +22,29 @@ class CacheControlBehavior extends Behavior
 
     /**
      * Removes a Cache-Control directive.
-     *
-     * @param string $key The Cache-Control directive
      */
-    public function removeCacheControlDirective(string $key)
+    public function removeCacheControlDirective(string $key): void
     {
         unset($this->cacheControl[$key]);
+
         $this->owner->getHeaders()->set('Cache-Control', $this->getCacheControlHeader());
     }
 
-
     /**
      * Returns true if the Cache-Control directive is defined.
-     *
-     * @param string $key The Cache-Control directive
-     *
-     * @return bool true if the directive exists, false otherwise
      */
-    public function hasCacheControlDirective(string $key)
+    public function hasCacheControlDirective(string $key): bool
     {
         return array_key_exists($key, $this->cacheControl);
     }
 
     /**
      * Returns a Cache-Control directive value by name.
-     *
-     * @param string $key The directive name
-     *
-     * @return mixed|null The directive value if defined, null otherwise
      */
-    public function getCacheControlDirective($key)
+    public function getCacheControlDirective(string|int $key)
     {
         return array_key_exists($key, $this->cacheControl) ? $this->cacheControl[$key] : null;
     }
-
 
     /**
      * Returns the number of seconds after the time specified in the response's Date
@@ -72,21 +52,18 @@ class CacheControlBehavior extends Behavior
      *
      * First, it checks for a s-maxage directive, then a max-age directive, and then it falls
      * back on an expires header. It returns null when no maximum age can be established.
-     *
-     * @return int|null Number of seconds
-     *
      */
-    public function getMaxAge()
+    public function getMaxAge(): ?int
     {
         if ($this->hasCacheControlDirective('s-maxage')) {
-            return (int)$this->getCacheControlDirective('s-maxage');
+            return (int) $this->getCacheControlDirective('s-maxage');
         }
+
         if ($this->hasCacheControlDirective('max-age')) {
-            return (int)$this->getCacheControlDirective('max-age');
+            return (int) $this->getCacheControlDirective('max-age');
         }
 
         return null;
-
     }
 
     /**
@@ -94,32 +71,23 @@ class CacheControlBehavior extends Behavior
      *
      * This methods sets the Cache-Control max-age directive.
      *
-     * @param int $value Number of seconds
-     *
-     * @return $this
-     *
      * @final since version 3.2
      */
-    public function setMaxAge($value)
+    public function setMaxAge($value): static
     {
         $this->addCacheControlDirective('max-age', $value);
 
         return $this;
     }
 
-
     /**
      * Sets the number of seconds after which the response should no longer be considered fresh by shared caches.
      *
      * This methods sets the Cache-Control s-maxage directive.
      *
-     * @param int $value Number of seconds
-     *
-     * @return $this
-     *
      * @final since version 3.2
      */
-    public function setSharedMaxAge($value)
+    public function setSharedMaxAge($value): static
     {
         $this->addCacheControlDirective('public');
         $this->removeCacheControlDirective('private');
@@ -129,7 +97,7 @@ class CacheControlBehavior extends Behavior
         return $this;
     }
 
-    public function getCacheControl()
+    public function getCacheControl(): array
     {
         return $this->cacheControl;
     }
@@ -139,16 +107,19 @@ class CacheControlBehavior extends Behavior
         if (is_null($value) || strlen($value) === 0) {
             return false;
         }
+
         foreach (explode(', ', $value) as $directive) {
             $parts = explode('=', $directive);
             $this->addCacheControlDirective($parts[0], $parts[1] ?? true);
         }
     }
 
-    protected function getCacheControlHeader()
+    protected function getCacheControlHeader(): string
     {
-        $parts = array();
+        $parts = [];
+
         ksort($this->cacheControl);
+
         foreach ($this->cacheControl as $key => $value) {
             if (true === $value) {
                 $parts[] = $key;
