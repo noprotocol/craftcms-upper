@@ -1,20 +1,14 @@
-<?php namespace ostark\upper\migrations;
+<?php
+
+namespace OneTribe\Upper\Migrations;
 
 use craft\db\Migration;
-use ostark\upper\Plugin;
+use OneTribe\Upper\Plugin;
 
-/**
- * Install migration.
- */
 class Install extends Migration
 {
-
-    /**
-     * @inheritdoc
-     */
-    public function safeUp()
+    public function safeUp(): bool
     {
-
         $this->dropTableIfExists(Plugin::CACHE_TABLE);
 
         // mysql with fulltext field tags
@@ -62,15 +56,12 @@ class Install extends Migration
         }
 
         return true;
-
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function safeDown()
+    public function safeDown(): bool
     {
         $this->dropTableIfExists(Plugin::CACHE_TABLE);
+
         return true;
     }
 }

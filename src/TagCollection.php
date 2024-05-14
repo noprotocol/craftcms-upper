@@ -1,27 +1,23 @@
-<?php namespace ostark\upper;
+<?php
 
-/**
- * Class TagCollection
- *
- * @package ostark\upper
- */
+namespace OneTribe\Upper;
+
 class TagCollection
 {
-    protected $tags = [];
+    protected array $tags = [];
+    protected string $keyPrefix = '';
 
-    protected $keyPrefix = '';
-
-    public function add(string $tag)
+    public function add(string $tag): void
     {
         $this->tags[] = $this->prepareTag($tag);
     }
 
-    public function getAll()
+    public function getAll(): array
     {
         return $this->tags;
     }
 
-    public function getUntilMaxBytes(int $maxBytes = null)
+    public function getUntilMaxBytes(int $maxBytes = null): array
     {
         if ($maxBytes === null) {
             return $this->tags;
@@ -29,6 +25,7 @@ class TagCollection
 
         $tags = [];
         $runningSize = 0;
+
         foreach ($this->tags as $tag) {
             $thisSize = mb_strlen($tag.' ', '8bit');
 
@@ -43,7 +40,7 @@ class TagCollection
         return $tags;
     }
 
-    public function addTagsFromElement(array $elementRawQueryResult = null)
+    public function addTagsFromElement(array $elementRawQueryResult = null): void
     {
         if (!is_array($elementRawQueryResult)) {
             return;
@@ -56,10 +53,7 @@ class TagCollection
         $this->unique();
     }
 
-    /**
-     * @param string $keyPrefix
-     */
-    public function setKeyPrefix($keyPrefix)
+    public function setKeyPrefix(string $keyPrefix): void
     {
         $this->keyPrefix = $keyPrefix;
     }
@@ -68,24 +62,19 @@ class TagCollection
      * Prepends tag with configured prefix.
      * To prevent key collision if you use the same
      * cache server for several Craft installations.
-     *
-     * @param string $tag
-     *
-     * @return string
      */
-    public function prepareTag($tag)
+    public function prepareTag(string $tag): string
     {
         return $this->keyPrefix . $tag;
     }
 
-
     protected function extractTags(array $elementRawQueryResult = null): array
     {
-        $tags       = [];
+        $tags = [];
         $properties = array_keys(Plugin::ELEMENT_PROPERTY_MAP);
 
         foreach ($properties as $prop) {
-            if (isset($elementRawQueryResult[$prop]) && !is_null($elementRawQueryResult[$prop])) {
+            if (isset($elementRawQueryResult[$prop]) && ! is_null($elementRawQueryResult[$prop])) {
                 $tags[] = Plugin::ELEMENT_PROPERTY_MAP[$prop] . $elementRawQueryResult[$prop];
             }
         }
@@ -93,7 +82,7 @@ class TagCollection
         return $tags;
     }
 
-    protected function unique()
+    protected function unique(): static
     {
         $this->tags = array_unique($this->tags);
 

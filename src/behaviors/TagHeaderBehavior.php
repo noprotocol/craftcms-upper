@@ -1,26 +1,18 @@
-<?php namespace ostark\upper\behaviors;
+<?php
+
+namespace OneTribe\Upper\Behaviors;
 
 use yii\base\Behavior;
 
 /**
- * Class TagHeaderBehavior
- *
- * @package ostark\upper\behaviors
  * @property \yii\web\Response $owner
  */
 class TagHeaderBehavior extends Behavior
 {
-
     /**
      * Simply tag
-     *
-     * @param string      $name
-     * @param array       $tags
-     * @param string|null $delimiter
-     *
-     * @return bool
      */
-    public function setTagHeader(string $name, array $tags, string $delimiter = null)
+    public function setTagHeader(string $name, array $tags, string $delimiter = null): bool
     {
         $headers = $this->owner->getHeaders();
 

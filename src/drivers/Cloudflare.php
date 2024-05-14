@@ -1,89 +1,82 @@
-<?php namespace ostark\upper\drivers;
+<?php
+
+namespace OneTribe\Upper\Drivers;
 
 use Craft;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
-use ostark\upper\exceptions\CloudflareApiException;
+use InvalidArgumentException;
+use OneTribe\Upper\Exceptions\CloudflareApiException;
 
-/**
- * Class Cloudflare Driver
- *
- * @package ostark\upper\drivers
- */
 class Cloudflare extends AbstractPurger implements CachePurgeInterface
 {
-    /**
-     * Cloudflare API endpoint
-     */
-    const API_ENDPOINT = 'https://api.cloudflare.com/client/v4/';
+    public const API_ENDPOINT = 'https://api.cloudflare.com/client/v4/';
+    private const MAX_URLS_PER_PURGE = 30;
 
-    const MAX_URLS_PER_PURGE = 30;
-
-    public $apiKey;
-
-    public $apiEmail;
-
-    public $apiToken;
-
-    public $zoneId;
-
-    public $domain;
-
+    public string $apiKey;
+    public string $apiEmail;
+    public string $apiToken;
+    public string $zoneId;
+    public string $domain;
 
     /**
-     * @param string $tag
-     *
-     * @return bool
+     * @throws \OneTribe\Upper\Exceptions\CloudflareApiException
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \craft\errors\DeprecationException
      */
-    public function purgeTag(string $tag)
+    public function purgeTag(string $tag): bool
     {
         if ($this->useLocalTags) {
             return $this->purgeUrlsByTag($tag);
         }
 
-        return $this->sendRequest('DELETE', 'purge_cache', [
-                'tags' => [$tag]
-            ]
-        );
+        return $this
+            ->request(
+                'DELETE',
+                'purge_cache',
+                ['tags' => [$tag]]
+            );
     }
 
     /**
-     * @param array $urls
-     *
-     * @return bool
-     * @throws \ostark\upper\exceptions\CloudflareApiException
+     * @throws \OneTribe\Upper\Exceptions\CloudflareApiException
+     * @throws \craft\errors\DeprecationException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function purgeUrls(array $urls)
+    public function purgeUrls(array $urls): bool
     {
         if (strpos($this->domain, 'http') !== 0) {
-            throw new \InvalidArgumentException("'domain' must include the protocol, e.g. https://www.foo.com");
+            throw new InvalidArgumentException("'domain' must include the protocol, e.g. https://www.foo.com");
         }
 
         // prefix urls with domain
-        $files = array_map(function($url) {
-            return rtrim($this->domain, '/') . $url;
-        }, $urls);
+        $files = array_map(fn ($url) => rtrim($this->domain, '/') . $url, $urls);
 
         // Chunk larger collections to meet the API constraints
         foreach (array_chunk($files, self::MAX_URLS_PER_PURGE) as $fileGroup) {
-            $this->sendRequest('DELETE', 'purge_cache', [
-                'files' => $fileGroup
-            ]);
+            $this->request(
+                'DELETE',
+                'purge_cache',
+                ['files' => $fileGroup]
+            );
         }
 
         return true;
     }
 
-
     /**
-     * @return bool
      * @throws \yii\db\Exception
+     * @throws \craft\errors\DeprecationException
+     * @throws \OneTribe\Upper\Exceptions\CloudflareApiException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function purgeAll()
+    public function purgeAll(): mixed
     {
-        $success = $this->sendRequest('DELETE', 'purge_cache', [
-            'purge_everything' => true
-        ]);
+        $success = $this->request(
+            'DELETE',
+            'purge_cache',
+            ['purge_everything' => true]
+        );
 
         if ($this->useLocalTags && $success === true) {
             $this->clearLocalCache();
@@ -92,23 +85,17 @@ class Cloudflare extends AbstractPurger implements CachePurgeInterface
         return $success;
     }
 
-
     /**
-     * @param string $method HTTP verb
-     * @param string $type
-     * @param array  $params
-     *
-     * @return bool
-     * @throws \ostark\upper\exceptions\CloudflareApiException
+     * @throws \OneTribe\Upper\Exceptions\CloudflareApiException
+     * @throws \craft\errors\DeprecationException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    protected function sendRequest($method = 'DELETE', string $type, array $params = [])
+    protected function request(string $method, string $type, array $params = []): bool
     {
-        $client = $this->getClient();
-
         try {
             $uri = "zones/{$this->zoneId}/$type";
             $options = (count($params)) ? ['json' => $params] : [];
-            $client->request($method, $uri, $options);
+            $this->client()->request($method, $uri, $options);
         } catch (BadResponseException $e) {
 
             throw CloudflareApiException::create(
@@ -120,7 +107,10 @@ class Cloudflare extends AbstractPurger implements CachePurgeInterface
         return true;
     }
 
-    private function getClient()
+    /**
+     * @throws \craft\errors\DeprecationException
+     */
+    private function client(): Client
     {
         $headers = [
             'Content-Type' => 'application/json',
@@ -141,8 +131,8 @@ class Cloudflare extends AbstractPurger implements CachePurgeInterface
         ]);
     }
 
-    private function usesLegacyApiKey()
+    private function usesLegacyApiKey(): bool
     {
-        return !isset($this->apiToken) && isset($this->apiKey);
+        return ! isset($this->apiToken) && isset($this->apiKey);
     }
 }

@@ -1,94 +1,76 @@
-<?php namespace ostark\upper\drivers;
+<?php
+
+namespace OneTribe\Upper\Drivers;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
-use ostark\upper\exceptions\KeycdnApiException;
+use OneTribe\Upper\Exceptions\KeycdnApiException;
 
-/**
- * Class Keycdn Driver
- *
- * @package ostark\upper\drivers
- */
 class Keycdn extends AbstractPurger implements CachePurgeInterface
 {
-    /**
-     * KeyCDN API endpoint
-     */
-    const API_ENDPOINT = 'https://api.keycdn.com/';
+    public const API_ENDPOINT = 'https://api.keycdn.com/';
 
-    public $apiKey;
-
-    public $zoneId;
-
-    public $zoneUrl;
-
+    public string $apiKey;
+    public string $zoneId;
+    public string $zoneUrl;
 
     /**
-     * @param string $tag
-     *
-     * @return bool
+     * @throws \OneTribe\Upper\Exceptions\KeycdnApiException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function purgeTag(string $tag)
+    public function purgeTag(string $tag): bool
     {
-        return $this->sendRequest('DELETE', 'purgetag', [
-                'tags' => [$tag]
-            ]
-        );
+        return $this
+            ->request(
+                'DELETE',
+                'purgetag',
+                ['tags' => [$tag]]
+            );
     }
 
     /**
-     * @param array $urls
-     *
-     * @return bool
+     * @throws \OneTribe\Upper\Exceptions\KeycdnApiException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function purgeUrls(array $urls)
+    public function purgeUrls(array $urls): bool
     {
         // prefix urls
-        $zoneUrls = array_map(function ($url) {
-            return $this->zoneUrl . $url;
-        }, $urls);
+        $zoneUrls = array_map(fn ($url) => $this->zoneUrl . $url, $urls);
 
-        return $this->sendRequest('DELETE', 'purgeurl', [
-                'urls' => $zoneUrls
-            ]
-        );
+        return $this
+            ->request(
+                'DELETE',
+                'purgeurl', ['urls' => $zoneUrls]
+            );
     }
 
-
     /**
-     * @return bool
+     * @throws \OneTribe\Upper\Exceptions\KeycdnApiException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function purgeAll()
+    public function purgeAll(): bool
     {
-        return $this->sendRequest('GET', 'purge', []);
+        return $this
+            ->request(
+                'GET',
+                'purge',
+            );
     }
 
-
     /**
-     * @param string $method HTTP verb
-     * @param string $type
-     * @param array  $params
-     *
-     * @return bool
-     * @throws \ostark\upper\exceptions\KeycdnApiException
+     * @throws \OneTribe\Upper\Exceptions\KeycdnApiException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    protected function sendRequest($method = 'DELETE', string $type, array $params = [])
+    protected function request(string $method, string $type, array $params = []): bool
     {
-        $token  = base64_encode("{$this->apiKey}:");
-        $client = new Client([
-            'base_uri' => self::API_ENDPOINT,
-            'headers'  => [
-                'Content-Type'  => 'application/json',
-                'Authorization' => "Basic {$token}"
-            ]
-        ]);
+        $headers = [
+            'Authorization' => 'Basic ' . base64_encode("{$this->apiKey}:"),
+        ];
 
         try {
-
-            $uri     = "zones/{$type}/{$this->zoneId}.json";
+            $uri = "zones/{$type}/{$this->zoneId}.json";
             $options = (count($params)) ? ['json' => $params] : [];
-            $client->request($method, $uri, $options);
-
+            $this->client($headers)->request($method, $uri, $options);
         } catch (BadResponseException $e) {
 
             throw KeycdnApiException::create(
@@ -98,6 +80,15 @@ class Keycdn extends AbstractPurger implements CachePurgeInterface
         }
 
         return true;
+    }
 
+    private function client(array $headers): Client
+    {
+        return new Client([
+            'base_uri' => self::API_ENDPOINT,
+            'headers'  => array_merge($headers, [
+                'Content-Type'  => 'application/json',
+            ]),
+        ]);
     }
 }

@@ -1,35 +1,32 @@
-<?php namespace ostark\upper\drivers;
+<?php
 
-use ostark\upper\Plugin;
+namespace OneTribe\Upper\Drivers;
+
+use Craft;
+use OneTribe\Upper\Plugin;
 use yii\base\BaseObject;
 use yii\db\Exception;
 use yii\helpers\ArrayHelper;
 
-/**
- * Class AbstractPurger Driver
- *
- * @package ostark\upper\drivers
- */
 class AbstractPurger extends BaseObject
 {
-    /**
-     * @var bool
-     */
-    public $useLocalTags;
+    public bool $useLocalTags;
 
     public function __construct($config)
     {
-        // assign config to object properties
         parent::__construct($config);
     }
 
+    public function purgeUrls(array $urls): bool
+    {
+        $joinedUrls = implode(',', $urls);
 
-    /**
-     * @param string $tag
-     *
-     * @return bool
-     */
-    public function purgeUrlsByTag(string $tag)
+        Craft::warning("Method purgeUrls([$joinedUrls]') was called - not implemented by driver ", "upper");
+
+        return true;
+    }
+
+    public function purgeUrlsByTag(string $tag): bool
     {
         try {
             if ($urls = $this->getTaggedUrls($tag)) {
@@ -40,7 +37,7 @@ class AbstractPurger extends BaseObject
                 return true;
             }
         } catch (Exception $e) {
-            \Craft::warning("Failed to purge '$tag'.", "upper");
+            Craft::warning("Failed to purge '$tag'.", "upper");
         }
 
         return false;
@@ -55,27 +52,24 @@ class AbstractPurger extends BaseObject
      *   'a139aa60-9b56-43b0-a9f5-bfaa7c68' => '/services/app-development'
      * ]
      *
-     * @param string $tag
-     *
-     * @return array
      * @throws \yii\db\Exception
      */
-    public function getTaggedUrls($tag)
+    public function getTaggedUrls(string $tag): array
     {
         // Use fulltext for mysql or array field for pgsql
-        $sql = \Craft::$app->getDb()->getIsMysql()
+        $sql = Craft::$app->getDb()->getIsMysql()
             ? "SELECT uid, url FROM %s WHERE MATCH(tags) AGAINST (%s IN BOOLEAN MODE)"
             : "SELECT uid, url FROM %s WHERE tags @> (ARRAY[%s]::varchar[])";
 
         // Replace table name and tag
         $sql = sprintf(
             $sql,
-            \Craft::$app->getDb()->quoteTableName(Plugin::CACHE_TABLE),
-            \Craft::$app->getDb()->quoteValue($tag)
+            Craft::$app->getDb()->quoteTableName(Plugin::CACHE_TABLE),
+            Craft::$app->getDb()->quoteValue($tag)
         );
 
         // Execute the sql
-        $results = \Craft::$app->getDb()
+        $results = Craft::$app->getDb()
             ->createCommand($sql)
             ->queryAll();
 
@@ -84,33 +78,26 @@ class AbstractPurger extends BaseObject
         }
 
         return ArrayHelper::map($results, 'uid', 'url');
-
     }
 
     /**
-     * @param array $uids
-     *
-     * @return int
      * @throws \yii\db\Exception
      */
-    public function invalidateLocalCache(array $uids)
+    public function invalidateLocalCache(array $uids): int
     {
-        return \Craft::$app->getDb()->createCommand()
+        return Craft::$app->getDb()->createCommand()
             ->delete(Plugin::CACHE_TABLE, ['uid' => $uids])
             ->execute();
     }
 
 
     /**
-     * @return int
      * @throws \yii\db\Exception
      */
-    public function clearLocalCache()
+    public function clearLocalCache(): int
     {
-        return \Craft::$app->getDb()->createCommand()
+        return Craft::$app->getDb()->createCommand()
             ->delete(Plugin::CACHE_TABLE)
             ->execute();
-
     }
-
 }

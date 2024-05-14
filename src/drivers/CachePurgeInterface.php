@@ -1,31 +1,23 @@
-<?php namespace ostark\upper\drivers;
+<?php
 
+declare(strict_types=1);
 
-/**
- * Interface CachePurgeInterface
- *
- * @package ostark\upper\drivers
- */
+namespace OneTribe\Upper\Drivers;
+
 interface CachePurgeInterface
 {
     /**
-     * @param string $tag
-     *
-     * @return bool
+     * Purge cache by tag
      */
-    public function purgeTag(string $tag);
+    public function purgeTag(string $tag): bool;
 
     /**
-     * @param array $urls
-     *
-     * @return bool
+     * Purge cache by urls
      */
-    public function purgeUrls(array $urls);
-
+    public function purgeUrls(array $urls): bool;
 
     /**
-     * @return bool
+     * Purge entire cache
      */
-    public function purgeAll();
-
+    public function purgeAll(): mixed;
 }

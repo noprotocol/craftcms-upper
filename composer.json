@@ -1,7 +1,8 @@
 {
-  "name": "ostark/upper",
+  "name": "onetribe/craft-upper",
   "description": "A cache plugin for Craft - supporting multiple Edge Caches",
   "type": "craft-plugin",
+  "license": "MIT",
   "keywords": [
     "craft",
     "cms",
@@ -10,40 +11,42 @@
     "cache",
     "cloudflare",
     "fastly",
-    "keycdn"
+    "keycdn",
+    "akamai"
   ],
-  "support": {
-    "docs": "https://github.com/ostark/upper/blob/master/README.md",
-    "issues": "https://github.com/ostark/upper/issues"
-  },
-  "license": "MIT",
   "authors": [
     {
       "name": "Oliver Stark",
       "homepage": "https://www.fortrabbit.com"
+    },
+    {
+      "name": "Job Verplanke",
+      "email": "job.verplanke@makesomenoise.nl"
     }
   ],
   "require": {
-    "craftcms/cms": "^3.2.0",
-    "guzzlehttp/guzzle": "^6.5.5|^7.2.0"
+    "php": "^8.1",
+    "craftcms/cms": "^4.0",
+    "guzzlehttp/guzzle": "^7.8",
+    "akamai-open/edgegrid-auth": "^2.0"
   },
   "require-dev": {
-    "vimeo/psalm": "^4.4"
   },
   "autoload": {
     "psr-4": {
-      "ostark\\upper\\": "src/"
+      "OneTribe\\Upper\\": "src/"
     }
-  },
-  "scripts": {
-    "ps": "phpstan analyse src --level=5 -c phpstan.neon",
-    "stan": "@ps"
   },
   "extra": {
     "name": "Upper",
     "handle": "upper",
     "hasCpSettings": false,
-    "hasCpSection": false,
-    "changelogUrl": "https://raw.githubusercontent.com/ostark/upper/master/CHANGELOG.md"
+    "hasCpSection": false
+  },
+  "config": {
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    }
   }
 }

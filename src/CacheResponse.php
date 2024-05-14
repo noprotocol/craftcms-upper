@@ -1,20 +1,20 @@
-<?php namespace ostark\upper;
+<?php
 
+namespace OneTribe\Upper;
+
+use OneTribe\Upper\Behaviors\CacheControlBehavior;
 use yii\base\Response;
 
 class CacheResponse
 {
-    /**
-     * @var \yii\base\Response|\ostark\upper\behaviors\CacheControlBehavior
-     */
-    public $response;
+    public Response|CacheControlBehavior $response;
 
     public function __construct(Response $response)
     {
         $this->response = $response;
     }
 
-    public function never()
+    public function never(): void
     {
         if (!$this->isWebResponse()) {
             return;
@@ -24,7 +24,7 @@ class CacheResponse
         $this->response->addCacheControlDirective('no-cache');
     }
 
-    public function for(string $time)
+    public function for(string $time): void
     {
         if (!$this->isWebResponse()) {
             return;

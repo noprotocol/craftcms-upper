@@ -1,22 +1,20 @@
-<?php namespace ostark\upper\exceptions;
+<?php
 
+namespace OneTribe\Upper\Exceptions;
+
+use Exception;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Throwable;
 
-class KeycdnApiException extends \Exception
+class KeycdnApiException extends Exception
 {
-    public function __construct(string $message = "", int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = "", int $code = 0, Throwable $previous = null)
     {
         parent::__construct("KeyCDN API error: $message", $code, $previous);
     }
 
-    /**
-     * @param \Psr\Http\Message\RequestInterface       $request
-     * @param \Psr\Http\Message\ResponseInterface|null $response
-     *
-     * @return static
-     */
-    public static function create(RequestInterface $request, ResponseInterface $response = null)
+    public static function create(RequestInterface $request, ResponseInterface $response = null): static
     {
         $uri = $request->getUri();
 
@@ -27,6 +25,7 @@ class KeycdnApiException extends \Exception
         // Extract error message from body
         $status = $response->getStatusCode();
         $json   = json_decode($response->getBody());
+
         if (json_last_error() !== JSON_ERROR_NONE) {
             return new static("KeyCDN API error ($status) on: '$uri'", $status);
         }
@@ -38,7 +37,6 @@ class KeycdnApiException extends \Exception
 
         // Unknown
         return new static("Unknown error, uri: '$uri'");
-
     }
 }
 

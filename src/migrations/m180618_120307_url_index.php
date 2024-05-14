@@ -1,19 +1,13 @@
 <?php
 
-namespace ostark\upper\migrations;
+namespace OneTribe\Upper\Migrations;
 
 use craft\db\Migration;
-use ostark\upper\Plugin;
+use OneTribe\Upper\Plugin;
 
-/**
- * m180618_120307_url_index migration.
- */
 class m180618_120307_url_index extends Migration
 {
-    /**
-     * @inheritdoc
-     */
-    public function safeUp()
+    public function safeUp(): bool
     {
         echo "  > Truncate table: " . Plugin::CACHE_TABLE . PHP_EOL;
         $this->truncateTable(Plugin::CACHE_TABLE);
@@ -34,12 +28,10 @@ class m180618_120307_url_index extends Migration
         return true;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function safeDown()
+    public function safeDown(): bool
     {
         echo "m180618_120307_url_index cannot be reverted.\n";
+
         return false;
     }
 }

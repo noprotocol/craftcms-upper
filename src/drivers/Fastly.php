@@ -1,8 +1,11 @@
-<?php namespace ostark\upper\drivers;
+<?php
+
+namespace OneTribe\Upper\Drivers;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
-use ostark\upper\exceptions\FastlyApiException;
+use InvalidArgumentException;
+use OneTribe\Upper\Exceptions\FastlyApiException;
 
 /**
  * Class Keycdn Driver
@@ -18,71 +21,52 @@ use ostark\upper\exceptions\FastlyApiException;
  *
  * PURGE https://www.example.com/example/uri HTTP/1.1
  * Fastly-Key:{$apiToken}
- *
- * @package ostark\upper\drivers
- *
  */
 class Fastly extends AbstractPurger implements CachePurgeInterface
 {
-    /**
-     * Fastly API endpoint
-     */
-    const API_ENDPOINT = 'https://api.fastly.com';
+    public const API_ENDPOINT = 'https://api.fastly.com';
+
+    public string $apiToken;
+    public string $serviceId;
+    public string $domain;
+    public bool $softPurge = false;
 
     /**
-     * @var string
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \OneTribe\Upper\Exceptions\FastlyApiException
      */
-    public $apiToken;
-
-    /**
-     * @var string
-     */
-    public $serviceId;
-
-    /**
-     * @var string
-     */
-    public $domain;
-
-    /**
-     * @var bool
-     */
-    public $softPurge = false;
-
-    /**
-     * Purge cache by tag
-     *
-     * @param string $tag
-     *
-     * @return bool
-     */
-    public function purgeTag(string $tag)
+    public function purgeTag(string $tag): bool
     {
-        return $this->sendRequest('POST', 'purge', [
-                'Surrogate-Key' => $tag
-            ]
-        );
+        return $this
+            ->request(
+                'POST',
+                'purge',
+                ['Surrogate-Key' => $tag]
+            );
     }
 
     /**
-     * Purge cache by urls
-     *
-     * @param array $urls
-     *
-     * @return bool
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \OneTribe\Upper\Exceptions\FastlyApiException
      */
-    public function purgeUrls(array $urls)
+    public function purgeUrls(array $urls): bool
     {
         if (strpos($this->domain, 'http') === false) {
-            throw new \InvalidArgumentException("'domain' is not configured for fastly driver");
+            throw new InvalidArgumentException("'domain' is not configured for fastly driver");
         }
 
         if (strpos($this->domain, 'http') !== 0) {
-            throw new \InvalidArgumentException("'domain' must include the protocol, e.g. http://www.foo.com");
+            throw new InvalidArgumentException("'domain' must include the protocol, e.g. http://www.foo.com");
         }
 
         foreach ($urls as $url) {
-            if (!$this->sendRequest('PURGE', $this->domain . $url)) {
+            $response = $this
+                ->request(
+                    'PURGE',
+                    $this->domain . $url,
+                );
+
+            if (! $response) {
                 return false;
             }
         }
@@ -90,48 +74,32 @@ class Fastly extends AbstractPurger implements CachePurgeInterface
         return true;
     }
 
-
     /**
-     * Purge entire cache
-     *
-     * @return bool
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \OneTribe\Upper\Exceptions\FastlyApiException
      */
-    public function purgeAll()
+    public function purgeAll(): bool
     {
-        return $this->sendRequest('POST', 'purge_all');
+        return $this
+            ->request(
+                'POST',
+                'purge_all',
+            );
     }
 
     /**
-     * Send API call
-     *
-     * @param string $method HTTP verb
-     * @param string $uri
-     * @param array  $headers
-     *
-     * @return bool
-     * @throws \ostark\upper\exceptions\FastlyApiException
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \OneTribe\Upper\Exceptions\FastlyApiException
      */
-    protected function sendRequest(string $method = 'PURGE', string $uri, array $headers = [])
+    protected function request(string $method, string $uri, array $headers = []): bool
     {
-        $client = new Client([
-            'base_uri' => self::API_ENDPOINT,
-            'headers'  => array_merge($headers, [
-                'Content-Type' => 'application/json',
-                'Fastly-Key'   => $this->apiToken,
-            ], $this->softPurge ? [
-                'Fastly-Soft-Purge' => 1,
-            ] : [])
-        ]);
-
         // Prepend the service endpoint
         if (in_array($method, ['POST','GET'])) {
             $uri = "service/{$this->serviceId}/{$uri}";
         }
 
         try {
-
-            $client->request($method, $uri);
-
+            $this->client($headers)->request($method, $uri);
         } catch (BadResponseException $e) {
 
             throw FastlyApiException::create(
@@ -142,9 +110,17 @@ class Fastly extends AbstractPurger implements CachePurgeInterface
 
         return true;
     }
+
+    private function client(array $headers): Client
+    {
+        return new Client([
+            'base_uri' => self::API_ENDPOINT,
+            'headers'  => array_merge($headers, [
+                'Content-Type' => 'application/json',
+                'Fastly-Key'   => $this->apiToken,
+            ], $this->softPurge ? [
+                'Fastly-Soft-Purge' => 1,
+            ] : []),
+        ]);
+    }
 }
-
-
-
-
-
