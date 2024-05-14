@@ -9,7 +9,7 @@ use yii\base\Component;
 
 class PurgerFactory extends Component
 {
-    public const DRIVERS_NAMESPACE = 'ostark\upper\drivers';
+    public const DRIVERS_NAMESPACE = 'OneTribe\Upper\Drivers';
 
     /**
      * @throws \yii\base\InvalidConfigException
