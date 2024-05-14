@@ -1,40 +1,29 @@
-<?php namespace ostark\upper\jobs;
+<?php
+
+namespace OneTribe\Upper\Jobs;
 
 use Craft;
 use craft\queue\BaseJob;
-use ostark\upper\Plugin;
+use OneTribe\Upper\Plugin;
 
-/**
- * Class PurgeCache
- *
- * @package ostark\upper\jobs
- */
 class PurgeCacheJob extends BaseJob
 {
-    /**
-     * @var string tag
-     */
-    public $tag;
+    public string $tag;
 
     /**
-     * @inheritdoc
+     * @throws \yii\base\InvalidConfigException
      */
-    public function execute($queue)
+    public function execute($queue): void
     {
-        if (!$this->tag) {
-            return false;
+        if (! $this->tag) {
+            return;
         }
 
         // Get registered purger
         $purger = Plugin::getInstance()->getPurger();
         $purger->purgeTag($this->tag);
-
     }
 
-
-    /**
-     * @inheritdoc
-     */
     protected function defaultDescription(): string
     {
         return Craft::t('upper', 'Upper Purge: {tag}', ['tag' => $this->tag]);
