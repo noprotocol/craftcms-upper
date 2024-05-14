@@ -23,7 +23,7 @@ class Settings extends Model
 {
     public string $driver;
 
-    public array $drivers;
+    public array $drivers = [];
 
     public ?int $defaultMaxAge = null;
 
